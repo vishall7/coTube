@@ -16,8 +16,8 @@ const roomSchema = new Schema(
             required: true
         },
         timeLimit: {
-            type: Date,
-            default: Date.now() + (10 * 60000) 
+            type: Number,
+            default: 600
         }
     }
 );
