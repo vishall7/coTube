@@ -16,8 +16,8 @@ const roomSchema = new Schema(
             required: true
         },
         timeLimit: {
-            type: Number,
-            default: 30
+            type: Date,
+            default: Date.now() + (10 * 60000) 
         }
     }
 );
@@ -31,7 +31,7 @@ roomSchema.methods.generateToken = function() {
         },
         process.env.ROOM_TOKEN_SECRET,
         {
-            expiresIn: this.timeLimit + "m"
+            expiresIn: this.timeLimit
         }
     )
 }
