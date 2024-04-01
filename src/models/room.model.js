@@ -16,13 +16,14 @@ const roomSchema = new Schema(
             required: true
         },
         timeLimit: {
-            type: Number,
-            default: 600
+            type: Number,            
+            enum: [5, 10, 20, 40],
+            default: 5           
         }
     }
 );
 
-roomSchema.methods.generateToken = function() {
+roomSchema.methods.generateToken = async function() {
     return jwt.sign(
         {
             _id: this._id,
@@ -31,7 +32,7 @@ roomSchema.methods.generateToken = function() {
         },
         process.env.ROOM_TOKEN_SECRET,
         {
-            expiresIn: this.timeLimit
+            expiresIn: this.timeLimit * 60
         }
     )
 }

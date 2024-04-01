@@ -33,7 +33,18 @@ const isYoutuber = asyncHandler(async (req,res,next) => {
     next();
 })
 
+const isRoomActive = asyncHandler(async (req,res,next)=>{
+
+    const roomToken =  req.cookies?.RoomToken || req.header("Authorization")?.replace("Bearer ","");
+
+    if(!roomToken){
+        throw new ApiError(400,"room has been expired")
+    }
+    next()
+})
+
 export {
     verifyJWT,
-    isYoutuber
+    isYoutuber,
+    isRoomActive
 }
