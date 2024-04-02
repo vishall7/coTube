@@ -2,6 +2,7 @@ import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Room } from "../models/room.model.js";
 
 const verifyJWT = asyncHandler(async (req,res,next) => {
 
@@ -40,7 +41,17 @@ const isRoomActive = asyncHandler(async (req,res,next)=>{
     if(!roomToken){
         throw new ApiError(400,"room has been expired")
     }
-    next()
+
+    const decodeedToken = jwt.verify(roomToken,process.env.ROOM_TOKEN_SECRET);
+
+    const room = await Room.findById(decodeedToken?._id);
+
+    if(!room){
+        throw new ApiError(400,"Invalid room token")
+    }
+
+    req.room = room;
+    next();
 })
 
 export {

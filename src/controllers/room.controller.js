@@ -16,12 +16,12 @@ const createRoom = asyncHandler(async (req,res)=>{
     //create a room generate token send to cookie,
     //store it in db
     //create a middleware that checks if room expires or not
-
+   
     if(req.cookies?.RoomToken){                
         throw new ApiError(400,"you have already created a room")
     }
 
-    const userId = req.user._id;
+    const userId = req.user._id;    
 
     const {roomname,time} = req.body;
 
@@ -60,7 +60,7 @@ const createRoom = asyncHandler(async (req,res)=>{
 })
 
 const inviteToRoom = asyncHandler(async (req,res)=>{
-    return res.status(200).send("invitation send")
+    
 })
 
 export {

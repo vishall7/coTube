@@ -20,6 +20,9 @@ const roomSchema = new Schema(
             enum: [5, 10, 20, 40],
             default: 5           
         }
+    },
+    {
+        timestamps: true
     }
 );
 
