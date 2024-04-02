@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Room } from "../models/room.model.js";
+import { RoomParticipant } from "../models/roomParticipant.model.js";
 
 const verifyJWT = asyncHandler(async (req,res,next) => {
 
@@ -54,8 +55,28 @@ const isRoomActive = asyncHandler(async (req,res,next)=>{
     next();
 })
 
+const isAuthorizedForRoom = asyncHandler(async (req,res,next)=>{
+    const participentToken = req.cookies?.RoomParticipantToken || req.header("Authorization")?.replace("Bearer ","");
+
+    if(!participentToken){
+        throw new ApiError(400,"unathourized access to room")
+    }
+
+    const decodeedToken = jwt.verify(participentToken,process.env.ROOM_PARTICIPANT_TOKEN_SECRET);
+
+    const roomParticipant = await RoomParticipant.findById(decodeedToken._id)
+
+    if(!roomParticipant){
+        throw new ApiError(400,"invalid participent Token")
+    }
+
+    req.roomParticipant = roomParticipant;
+    next()
+}) 
+
 export {
     verifyJWT,
     isYoutuber,
-    isRoomActive
+    isRoomActive,
+    isAuthorizedForRoom
 }
