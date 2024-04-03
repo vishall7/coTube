@@ -22,13 +22,13 @@ const registerUser = asyncHandler(async (req,res)=> {
 
     if(!role){
         throw new ApiError(400,"user must specify his role")
-    }
+    }    
 
     const isUserExisted = await User.findOne({
-        $or: [{username},{email},{role}]
-    });
+        $or: [{username},{email}] 
+    })   
 
-    if(isUserExisted){
+    if(isUserExisted.role === role){
         throw new ApiError(400,"user already existed")
     }
 

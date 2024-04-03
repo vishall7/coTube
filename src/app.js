@@ -10,10 +10,11 @@ app.use(express.static("public"))
 
 // route import 
 
-import userRouter from "./routes/user.route.js" 
-
+import userRouter from "./routes/user.route.js";
+import roomRouter from "./routes/room.route.js";
 // route declaration
 
-app.use("/api/v1/user",userRouter)
+app.use("/api/v1/user",userRouter);
+app.use("/api/v1/room",roomRouter);
 
 export { app }
