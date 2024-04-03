@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Room } from "../models/room.model.js";
 import { RoomParticipant } from "../models/roomParticipant.model.js";
+import { isValidObjectId } from "mongoose";
 
 const verifyJWT = asyncHandler(async (req,res,next) => {
 
@@ -65,9 +66,9 @@ const isAuthorizedForRoom = asyncHandler(async (req,res,next)=>{
     const decodeedToken = jwt.verify(participentToken,process.env.ROOM_PARTICIPANT_TOKEN_SECRET);
 
     const roomParticipant = await RoomParticipant.findById(decodeedToken._id)
-
-    if(!roomParticipant){
-        throw new ApiError(400,"invalid participent Token")
+    
+    if(!roomParticipant.participantID.equals(req.user?._id)){
+        throw new ApiError(400,"youre not authorized for this room") 
     }
 
     req.roomParticipant = roomParticipant;

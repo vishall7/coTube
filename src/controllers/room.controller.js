@@ -147,14 +147,9 @@ const joinRoom = asyncHandler(async(req,res)=>{
 
     if(!createRoomParticipant){
         throw new ApiError(400,"can not able to join the room")
-    }
+    }    
 
-    const roomParticipantGenerateToken = async (roomParticipant) => {        
-        const token = await roomParticipant.generateToken(req.room?.timeLimit);
-        return token
-    }
-
-    const roomParticipantToken = await roomParticipantGenerateToken(createRoomParticipant);
+    const roomParticipantToken = await createRoomParticipant.generateToken(req.room?.timeLimit);
 
     if(!roomParticipantToken){
         throw new ApiError(400,"problem occured during room joining") 

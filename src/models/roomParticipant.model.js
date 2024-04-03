@@ -34,7 +34,7 @@ roomParticipantSchema.methods.generateToken = function(time){
         },
         process.env.ROOM_PARTICIPANT_TOKEN_SECRET,
         {
-            expiresIn: time * 60
+            expiresIn: (time * 60)            
         }
     ) 
 } 

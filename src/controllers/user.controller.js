@@ -28,6 +28,8 @@ const registerUser = asyncHandler(async (req,res)=> {
         $or: [{username},{email},{role}]
     });
 
+    console.log(isUserExisted)
+
     if(isUserExisted){
         throw new ApiError(400,"user already existed")
     }
