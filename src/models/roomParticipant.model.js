@@ -17,7 +17,10 @@ const roomParticipantSchema = new Schema(
             type: mongoose.Types.ObjectId,
             ref: "User",
             required: true
-        } 
+        },
+        token: {
+            type: String
+        }  
     },
     {
         timestamps: true

@@ -1,12 +1,7 @@
 import mongoose, {Schema} from "mongoose";
 
 const requestSchema = new Schema(
-    {
-        roomID: {
-            type: mongoose.Types.ObjectId,
-            ref: "Room",
-            required: true
-        },
+    {        
         senderID: {
             type: mongoose.Types.ObjectId,
             ref: "User",
@@ -15,6 +10,10 @@ const requestSchema = new Schema(
         receiverID: {
             type: mongoose.Types.ObjectId,
             ref: "User",
+            required: true
+        },
+        roomToken: {
+            type: String,
             required: true
         },
         pending: {

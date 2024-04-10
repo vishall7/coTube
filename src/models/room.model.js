@@ -19,7 +19,10 @@ const roomSchema = new Schema(
             type: Number,            
             enum: [5, 10, 20, 40],
             default: 5           
-        }
+        },
+        token: {
+            type: String,
+        }        
     },
     {
         timestamps: true
