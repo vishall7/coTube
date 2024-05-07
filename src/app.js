@@ -12,9 +12,10 @@ app.use(express.static("public"))
 
 import userRouter from "./routes/user.route.js";
 import roomRouter from "./routes/room.route.js";
+import fileRouter from "./routes/filesharing.route.js";
 // route declaration
 
 app.use("/api/v1/user",userRouter);
 app.use("/api/v1/room",roomRouter);
-
+app.use("/api/v1/file",fileRouter);
 export { app }
