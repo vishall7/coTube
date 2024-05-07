@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import mongoose, {Schema} from "mongoose";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const roomParticipantSchema = new Schema(
     {
@@ -42,4 +43,5 @@ roomParticipantSchema.methods.generateToken = function(time){
     ) 
 } 
 
+roomParticipantSchema.plugin(mongooseAggregatePaginate);
 export const RoomParticipant = mongoose.model("RoomParticipant",roomParticipantSchema);

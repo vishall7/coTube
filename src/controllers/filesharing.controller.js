@@ -1,42 +1,75 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { fileUploadTOCloudinary } from "../utils/cloudinary.js";
+import { fileUploadToCloudinary } from "../utils/cloudinary.js";
+import Path from 'path';
+import Fs from 'fs';
+import axios from "axios";
+
+
+
+
+// upload file to cloudinary and return download url
 
 const uploadFile = asyncHandler(async (req,res)=>{
+
     const videoLocalPath = req.file?.path;
-    console.log(videoLocalPath)
+    
     if(!videoLocalPath){
         throw new ApiError(400,"file missing")
     }
 
-    const uploadedvideo = await fileUploadTOCloudinary(videoLocalPath);
+    const uploadedVideo = await fileUploadToCloudinary(videoLocalPath);
 
-    if(!uploadedvideo){
+    if(!uploadedVideo){
         throw new ApiError(400,"file not uploaded")
-    }   
+    }
 
-    const cloudinaryUrl = uploadedvideo.url; 
+    // send video as message to room using socketio
 
-// Add transformation parameters to trigger download
-    const downloadUrl = cloudinaryUrl + '#.mp4';
-
-// Provide the direct download link to users
-    console.log(downloadUrl); 
-
-    
+    const encodedUrl = encodeURIComponent(uploadedVideo.url);  
+    console.log(encodedUrl)
     return res
     .status(200)
     .json(
-        new ApiResponse(200,downloadUrl,"video uploaded")
+        new ApiResponse(200,encodedUrl,"file uploaded")
     )
+    
 })
 
-const downloadFile = asyncHandler(async (req,res)=> {
-    //get download
-})
+const downloadFile = asyncHandler(async (req, res) => {
+    // Suppose you are in room and you receive video that you want to download
+    // Get its public URL from params
+    const videoUrl = decodeURIComponent(req.params.videoUrl);
+
+    const filenamePattern = /\/([^/]+)\.(jpg|jpeg|png|gif|mp4|mov|avi|...)$/i;
+
+    // Set the file name
+    const filename = videoUrl.match(filenamePattern);
+
+    const response = await axios({
+        method: 'GET',
+        url: videoUrl,
+        responseType: 'stream'
+    })
+
+    response.data.pipe(res)
+
+    res.setHeader('Content-Disposition', `attachment; filename="${filename[0]}"`);
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200,`${filename[0]} video downloaded to your local pc`)
+    )
+     
+    
+    
+});
+
 
 
 export {
-    uploadFile
+    uploadFile,
+    downloadFile
 }

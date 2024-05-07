@@ -7,12 +7,13 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET 
   });
 
-const fileUploadTOCloudinary = async (localFilePath,tags) => {
+const fileUploadToCloudinary = async (localFilePath,tags) => {
   try {
     if(!localFilePath) return null;
     
     const uploadOptions = {
       resource_type: "auto",
+      use_filename: true,
     };
     
     if (tags) {
@@ -21,7 +22,6 @@ const fileUploadTOCloudinary = async (localFilePath,tags) => {
     
     // upload file to cloudinary
     const response = await cloudinary.uploader.upload(localFilePath,uploadOptions)
-    
     // unlink after upload
     fs.unlinkSync(localFilePath);
 
@@ -33,5 +33,5 @@ const fileUploadTOCloudinary = async (localFilePath,tags) => {
 }
 
 export {
-    fileUploadTOCloudinary
+  fileUploadToCloudinary
 }

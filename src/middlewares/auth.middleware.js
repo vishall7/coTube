@@ -8,23 +8,30 @@ import { RoomParticipant } from "../models/roomParticipant.model.js";
 
 const verifyJWT = asyncHandler(async (req,res,next) => {
 
-    const accessToken = req.cookies?.AccessToken || req.header("Authorization")?.replace("Bearer ","");
+    const accessToken = req.cookies?.AccessToken; 
     
     if (!accessToken) {
         throw new ApiError(400,"unathourized request")
     }
-
-    const decodeedToken = jwt.verify(accessToken,process.env.ACCESS_TOKEN_SECRET);
-
-    const user = await User.findById(decodeedToken._id);
-
-    if(!user){
-        throw new ApiError(400,"invalid accessToken")
-    }
-
-    req.user = user;
-
-    next()   
+    
+    try {
+        const decodeedToken = jwt.verify(accessToken,process.env.ACCESS_TOKEN_SECRET);
+    
+        const user = await User.findById(decodeedToken?._id);
+        
+        if(!user){
+            throw new ApiError(400, "user not found")
+        }
+    
+        req.user = user;    
+        next()
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError') {
+            throw new ApiError(401, "Room token has expired");
+        } else {
+            throw error
+        }
+    }   
 
 })
 
@@ -36,29 +43,34 @@ const isYoutuber = asyncHandler(async (req,res,next) => {
     next();
 })
 
-const isRoomActive = asyncHandler(async (req,res,next)=>{
+const isRoomActive = asyncHandler(async (req, res, next) => {
 
-    const roomToken =  req.cookies?.RoomToken || req.header("Authorization")?.replace("Bearer ","");
+    const roomToken = req.cookies?.RoomToken || req.header("Authorization")?.replace("Bearer ", "");
 
-    if(!roomToken){
-        throw new ApiError(400,"room not found")
+    if (!roomToken) {
+        throw new ApiError(400, "Room token not found");
     }
 
-    const decodeedToken = jwt.verify(roomToken,process.env.ROOM_TOKEN_SECRET);
+    try {
+        const decodedToken = jwt.verify(roomToken, process.env.ROOM_TOKEN_SECRET);
 
-    if(!decodeedToken){
-        throw new ApiError(400,"room has been expired")
+        const room = await Room.findById(decodedToken._id); 
+        
+        if(!room){
+            throw new ApiError(400, "room not found") 
+        }
+
+        req.room = room;
+        next();
+    } catch (error) {        
+        if (error.name === 'JsonWebTokenError') {
+            throw new ApiError(401, "Room token has expired");
+        } else {
+            throw error
+        }        
     }
+});
 
-    const room = await Room.findById(decodeedToken?._id);
-
-    if(!room){
-        throw new ApiError(400,"Invalid room token")
-    }
-
-    req.room = room;
-    next();
-})
 
 const isAuthorizedForRoom = asyncHandler(async (req,res,next)=>{
 
@@ -71,17 +83,21 @@ const isAuthorizedForRoom = asyncHandler(async (req,res,next)=>{
     )
 
     if(participent){
-    const decodeedToken = jwt.verify(participent.token,process.env.ROOM_PARTICIPANT_TOKEN_SECRET);
-      
-    if(!decodeedToken){
-        throw new ApiError(400,"room access closed")
-    }
-
-    if(!participent._id.equals(decodeedToken._id)){
-        throw new ApiError(400,"youre not authorized for this room") 
-    }
-    req.roomParticipant = participent;
-    next()
+        try {
+                const decodeedToken = jwt.verify(participent.token,process.env.ROOM_PARTICIPANT_TOKEN_SECRET);          
+        
+                if(!participent._id.equals(decodeedToken._id)){
+                    throw new ApiError(400,"user not authorized for this room") 
+                }
+                req.roomParticipant = participent;
+                next()
+        } catch (error) {
+            if (error.name === 'JsonWebTokenError') {
+                throw new ApiError(401, "participant token has expired");
+            } else {
+                throw error
+            }
+        }
     }
 
     if(!req.user._id.equals(req.room.createdBy)){
@@ -99,3 +115,4 @@ export {
     isRoomActive,
     isAuthorizedForRoom
 }
+

@@ -15,12 +15,6 @@ const roomGenerateToken = async (roomId) => {
     return token
 }
 
-// const roomParticipantGenerateToken = async (roomParticipantId) => {
-//     const roomParticipant = await RoomParticipant.findById(roomParticipantId);
-//     const token = await roomParticipant.generateToken(req.room?.timeLimit);
-//     return token
-// }
-
 // youtubers controllers 
 
 const createRoom = asyncHandler(async (req,res)=>{
@@ -111,6 +105,89 @@ const inviteToRoom = asyncHandler(async (req,res)=>{
     )
 })
 
+const closeRoom = asyncHandler(async (req,res)=>{
+    //check if the room is closed or not
+    //if closed throw error
+    //if not closed close the room
+    //if closed successfully send response
+    if(!req.room){
+        throw new ApiError(400,"room not found")
+    }
+    
+    const deletedRoom = await Room.findByIdAndUpdate(
+        req.room._id,
+        {
+            $unset: {
+                token: ''
+            }
+        },
+        {new: true}
+    );
+
+    if(!deletedRoom){
+        throw new ApiError(400,'room token not deleted')
+    }
+
+    
+    return res
+    .status(200)
+    .clearCookie('RoomToken')
+    .json(
+        new ApiResponse(200,deletedRoom,"room has been deleted")
+    )
+})
+
+const countRoomParticipants = asyncHandler(async (req, res) => {
+    const roomId = req.room?._id;
+
+    const roomParticipants = await RoomParticipant.aggregate([
+        {
+            $match: { roomID: roomId }
+        },
+        {
+            $group: {
+                _id: "$roomID",
+                count: { $sum: 1 },
+                participants: { $push: "$participantID" }
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "participants",
+                foreignField: "_id",
+                as: "participantsDetails",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 0,                            
+                            fullname: 1    
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                count: 1,
+                participants: "$participantsDetails"
+            }
+        }
+    ]);
+
+    if (roomParticipants.length === 0) {
+        return res.status(200).json(
+            new ApiResponse(200, { count: 0, participants: [] }, "No participants in the room")
+        );
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, roomParticipants[0], "Room participants fetched successfully")
+    );
+});
+
+ 
 // editors controllers
 
 const joinRoom = asyncHandler(async(req,res)=>{
@@ -183,5 +260,7 @@ export {
     createRoom,
     inviteToRoom,
     joinRoom,
-    furtherAction
+    furtherAction,
+    closeRoom,
+    countRoomParticipants
 }
