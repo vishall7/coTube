@@ -2,16 +2,13 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { fileUploadToCloudinary } from "../utils/cloudinary.js";
-import Path from 'path';
-import Fs from 'fs';
 import axios from "axios";
-
-
+import { SharedFile } from "../models/sharedFile.model.js";
 
 
 // upload file to cloudinary and return download url
 
-const uploadFile = asyncHandler(async (req,res)=>{
+const uploadAndShareFile = asyncHandler(async (req,res)=>{
 
     const videoLocalPath = req.file?.path;
     
@@ -25,14 +22,18 @@ const uploadFile = asyncHandler(async (req,res)=>{
         throw new ApiError(400,"file not uploaded")
     }
 
-    // send video as message to room using socketio
-
-    const encodedUrl = encodeURIComponent(uploadedVideo.url);  
-    console.log(encodedUrl)
+    const sharedFile = await SharedFile.create(
+        {
+            videoFile: encodeURIComponent(uploadedVideo.url),
+            sendBy: req.user?._id,            
+        }
+    )
+    // send video as message to room using socketio     
+    
     return res
     .status(200)
     .json(
-        new ApiResponse(200,encodedUrl,"file uploaded")
+        new ApiResponse(200,sharedFile,"file uploaded and ready to share")
     )
     
 })
@@ -70,6 +71,6 @@ const downloadFile = asyncHandler(async (req, res) => {
 
 
 export {
-    uploadFile,
+    uploadAndShareFile,
     downloadFile
 }
