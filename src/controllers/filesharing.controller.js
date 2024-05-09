@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { fileUploadToCloudinary } from "../utils/cloudinary.js";
 import axios from "axios";
 import { SharedFile } from "../models/sharedFile.model.js";
-
+import {FileReceiver} from "../models/fileReceiver.model.js";
 
 // upload file to cloudinary and return download url
 
@@ -30,6 +30,15 @@ const uploadAndShareFile = asyncHandler(async (req,res)=>{
     )
     // send video as message to room using socketio     
     
+    const receivers = await FileReceiver.create({
+        videoFile: sharedFile._id,
+        sendBy: req.user._id,
+        receivedBy: recipients,
+        isDownloaded: recipients.map(() => false)
+      });
+      
+    console.log(receivers)  
+
     return res
     .status(200)
     .json(
