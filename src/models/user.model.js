@@ -10,13 +10,7 @@ const userSchema = new Schema(
             lowercase: true,
             trim: true,
             required: true
-        },
-        fullname: {
-            type: String,
-            unique: true,            
-            trim: true,
-            required: true
-        },
+        },        
         email: {
             type: String,
             unique: true,            
@@ -56,8 +50,7 @@ userSchema.methods.generateAccessToken = async function() {
         {
             _id: this._id,
             email: this.email,
-            username: this.username,
-            fullname: this.fullname,
+            username: this.username,            
             role: this.role
         },
         process.env.ACCESS_TOKEN_SECRET,

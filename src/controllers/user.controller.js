@@ -14,9 +14,9 @@ const generateTokens = async (userId) => {
 
 const registerUser = asyncHandler(async (req,res)=> {
     
-    const {username,email,fullname,password,role} = req.body;
+    const {username,email,password,role} = req.body;
 
-    if([username,email,fullname,password,role].some((feild)=> feild?.trim() === "")){
+    if([username,email,password,role].some((feild)=> feild?.trim() === "")){
         throw new ApiError(400,"All feilds are manditory")
     }
 
@@ -28,14 +28,13 @@ const registerUser = asyncHandler(async (req,res)=> {
         $or: [{username},{email}] 
     })   
 
-    if(isUserExisted.role === role){
+    if(isUserExisted?.role === role){
         throw new ApiError(400,"user already existed")
     }
 
     const user = await User.create(
         {
-            username,            
-            fullname,
+            username,      
             email,
             password,
             role
