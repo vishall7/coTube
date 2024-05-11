@@ -1,17 +1,19 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { fileUploadToCloudinary } from "../utils/cloudinary.js";
+import { fileUploadToCloudinary, fileDeleteToCloudinary } from "../utils/cloudinary.js";
 import axios from "axios";
 import { SharedFile } from "../models/sharedFile.model.js";
 import {FileReceiver} from "../models/fileReceiver.model.js";
+import {RoomParticipant} from "../models/roomParticipant.model.js";
 
 // upload file to cloudinary and return download url
 
 const uploadAndShareFile = asyncHandler(async (req,res)=>{
 
-    const videoLocalPath = req.file?.path;
-    
+    const videoLocalPath = req.file?.path;    
+
+    // throw new Error 
     if(!videoLocalPath){
         throw new ApiError(400,"file missing")
     }
@@ -24,21 +26,27 @@ const uploadAndShareFile = asyncHandler(async (req,res)=>{
 
     const sharedFile = await SharedFile.create(
         {
-            videoFile: encodeURIComponent(uploadedVideo.url),
+            videoFile: uploadedVideo.url,
             sendBy: req.user?._id,            
         }
-    )
-    // send video as message to room using socketio     
+    )      
     
+    const roomParticipants = await RoomParticipant.find({
+        roomID: req.room?._id,
+        participantID: req.user?._id 
+      }).select('participantID');      
+
+    const recipients = roomParticipants.map(participant => participant.participantID);
+      
+      // Create a new Receivers document
     const receivers = await FileReceiver.create({
         videoFile: sharedFile._id,
         sendBy: req.user._id,
         receivedBy: recipients,
         isDownloaded: recipients.map(() => false)
-      });
-      
-    console.log(receivers)  
-
+    });
+    // send video as message to room using socketio    
+           
     return res
     .status(200)
     .json(
@@ -49,31 +57,58 @@ const uploadAndShareFile = asyncHandler(async (req,res)=>{
 
 const downloadFile = asyncHandler(async (req, res) => {
     // Suppose you are in room and you receive video that you want to download
-    // Get its public URL from params
-    const videoUrl = decodeURIComponent(req.params.videoUrl);
+
+    const sharedFileId = req.params?.sharedFileId;
+    const recipientId = req.user?._id; 
+   
+    const receivers = await FileReceiver.findOne({
+      videoFile: sharedFileId,
+      receivedBy: recipientId
+    });
+
+    if (!receivers) {
+      throw new ApiError(404, 'File not found or not shared with you');
+    }
+    
+    const recipientIndex = receivers.receivedBy.indexOf(recipientId);
+
+    if (receivers.isDownloaded[recipientIndex]) {
+      throw new ApiError(400, 'File already downloaded');
+    }
+    
+    const sharedFile = await SharedFile.findById(sharedFileId);
 
     const filenamePattern = /\/([^/]+)\.(jpg|jpeg|png|gif|mp4|mov|avi|...)$/i;
 
     // Set the file name
-    const filename = videoUrl.match(filenamePattern);
+    const filename = sharedFile.videoFile.match(filenamePattern);
 
     const response = await axios({
         method: 'GET',
-        url: videoUrl,
+        url: sharedFile.videoFile,
         responseType: 'stream'
     })
-
-    response.data.pipe(res)
-
+    
     res.setHeader('Content-Disposition', `attachment; filename="${filename[0]}"`);
+    res.setHeader('Content-Type', 'video/mp4');
+    response.data.pipe(res);
+
+    receivers.isDownloaded[recipientIndex] = true;
+    await receivers.save();
+    
+    const allDownloaded = receivers.isDownloaded.every(Boolean);
+    
+    if(allDownloaded){
+        await fileDeleteToCloudinary(sharedFile.videoFile);
+        sharedFile.isDeleted = true;
+        await sharedFile.save();
+    }
 
     return res
     .status(200)
     .json(
-        new ApiResponse(200,`${filename[0]} video downloaded to your local pc`)
-    )
-     
-    
+        new ApiResponse(200,'File downloaded successfully')
+    )   
     
 });
 

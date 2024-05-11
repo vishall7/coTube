@@ -32,6 +32,23 @@ const fileUploadToCloudinary = async (localFilePath,tags) => {
   }
 }
 
+const fileDeleteToCloudinary = async (publicUrl,resourceType) => {
+  try {
+
+    if(!publicUrl) return null;
+
+    const publicId = publicUrl.match(/\/upload\/v([^/]+)\/([\w\d]+)/)[2];
+    
+    const response = await cloudinary.uploader.destroy(publicId,resourceType);
+
+    return response;
+
+  } catch (error) {
+      return error.message;
+  }
+}
+
 export {
-  fileUploadToCloudinary
+  fileUploadToCloudinary,
+  fileDeleteToCloudinary
 }
