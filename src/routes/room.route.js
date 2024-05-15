@@ -1,6 +1,6 @@
 import { Router } from "express"; 
 import { isAuthorizedForRoom, isRoomActive, isYoutuber, verifyJWT } from "../middlewares/auth.middleware.js";
-import { closeRoom, countRoomParticipants, createRoom, furtherAction, inviteToRoom, joinRoom } from "../controllers/room.controller.js";
+import { closeRoom, countRoomParticipants, createRoom, furtherAction, inviteToRoom, joinRoom, pendingRoomRequests } from "../controllers/room.controller.js";
 
 const router = Router();
 
@@ -11,9 +11,11 @@ router.route("/invite-to-room/:receiverID").post(verifyJWT,isYoutuber,isRoomActi
 router.route("/close-room").get(verifyJWT,isYoutuber,isRoomActive,closeRoom)
 
 //editors routes
-router.route("/join-to-room").post(verifyJWT,isRoomActive,joinRoom);
+router.route("/join-to-room/:requestId").post(verifyJWT,isRoomActive,joinRoom);
 
 router.route("/joined").get(verifyJWT,isRoomActive,isAuthorizedForRoom,furtherAction)
+
+router.route("/pending-requests").get(verifyJWT,pendingRoomRequests);
 
 // both routes
 

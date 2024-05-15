@@ -18,6 +18,15 @@ const uploadAndShareFile = asyncHandler(async (req,res)=>{
         throw new ApiError(400,"file missing")
     }
 
+    const roomParticipants = await RoomParticipant.find({
+        roomID: req.room?._id,
+        roomOwnerID: req.user?._id 
+    }).select('participantID'); 
+
+    if(!roomParticipants.length){
+        throw new ApiError(400,"room participants not found")
+    }
+    console.log(roomParticipants)
     const uploadedVideo = await fileUploadToCloudinary(videoLocalPath);
 
     if(!uploadedVideo){
@@ -29,12 +38,7 @@ const uploadAndShareFile = asyncHandler(async (req,res)=>{
             videoFile: uploadedVideo.url,
             sendBy: req.user?._id,            
         }
-    )      
-    
-    const roomParticipants = await RoomParticipant.find({
-        roomID: req.room?._id,
-        participantID: req.user?._id 
-      }).select('participantID');      
+    )    
 
     const recipients = roomParticipants.map(participant => participant.participantID);
       
@@ -46,7 +50,7 @@ const uploadAndShareFile = asyncHandler(async (req,res)=>{
         isDownloaded: recipients.map(() => false)
     });
     // send video as message to room using socketio    
-           
+     console.log(receivers)      
     return res
     .status(200)
     .json(

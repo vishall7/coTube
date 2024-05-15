@@ -78,7 +78,7 @@ const inviteToRoom = asyncHandler(async (req,res)=>{
         roomToken: req.room.token,
         pending: true
     });
-
+    
     if(requestExisted){
         throw new ApiError(400,"request already send")
     }
@@ -97,7 +97,7 @@ const inviteToRoom = asyncHandler(async (req,res)=>{
     if(!request){
         throw new ApiError(400,"request not created")
     }
-
+ 
     return res
     .status(200)
     .json(
@@ -190,21 +190,23 @@ const countRoomParticipants = asyncHandler(async (req, res) => {
  
 // editors controllers
 
-const joinRoom = asyncHandler(async(req,res)=>{
-    //check if the request is being accepted or not
-    //if request accepted change its status
-    //create room Participent and by that create jwt
-    // if successfully created further routes will have access to room and no other participent have access
-    
-    let request = await Request.findOne({        
-        senderID: req.room?.createdBy,
-        receiverID: req.user?._id,
-        roomToken: req.room?.token,        
-    })
+const joinRoom = asyncHandler(async(req,res)=>{    
 
-    if(!request){
-        throw new ApiError(400,"request is not being made")
-    }
+    const {requestId} = req.params;   
+
+    const requestAccepted = await Request.findByIdAndUpdate(
+        requestId,
+        {
+            $set: {
+                pending: false
+            }
+        },
+        {new: true}
+    ); 
+    
+    if(!requestAccepted){
+        throw new ApiError(400,"request not accepted")
+    }  
 
     const alreadyParticipant = await RoomParticipant.findOne({
         roomID: req.room._id,
@@ -214,20 +216,7 @@ const joinRoom = asyncHandler(async(req,res)=>{
 
     if(alreadyParticipant){
         throw new ApiError(400,"you`re already room participant")
-    }
-
-     // suppose request is accepted using socketIo
-
-    let accepted = true;
-    
-    if(!accepted){
-        throw new ApiError(400,"request declined")
-    }
-
-    request.pending = false;  // accept the request and change its status in db  
-    await request.save({validateBeforeSave: true})
-    
-    
+    }    
 
     const createRoomParticipant = await RoomParticipant.create({
         roomID: req.room?._id,
@@ -250,7 +239,26 @@ const joinRoom = asyncHandler(async(req,res)=>{
     .json(
         new ApiResponse(200,createRoomParticipant,"you have joined the room")
     )
-})
+});
+
+
+
+const pendingRoomRequests = asyncHandler(async(req,res)=>{
+    const penndingRequests = await Request.find({
+        receiverID: req.user?._id,
+        pending: true
+    })   
+
+    if(!penndingRequests){
+        throw new ApiError(400,"no pending requests")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200,penndingRequests,"pending requests")
+    )
+})      
 
 const furtherAction = asyncHandler(async (req,res)=>{
     return res.status(200).send("access to room")
@@ -262,5 +270,6 @@ export {
     joinRoom,
     furtherAction,
     closeRoom,
-    countRoomParticipants
+    countRoomParticipants,
+    pendingRoomRequests
 }
