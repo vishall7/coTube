@@ -13,6 +13,13 @@ app.use(express.json({limit: "16kb"}))
 app.use(express.urlencoded({extended:true,limit: "16kb"}))
 app.use(cookieParser())
 app.use(express.static("public"))
+app.use((err,req,res,next)=>{
+    if(res.headersSent){
+        return next(err)
+    }
+    
+    return res.status(err.statusCode).json({error: err.message})
+})
 
 // route import 
 

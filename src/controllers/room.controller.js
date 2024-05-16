@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Room } from "../models/room.model.js";
 import { Request } from "../models/request.model.js";
 import { RoomParticipant } from "../models/roomParticipant.model.js";
+import mongoose from "mongoose";
 
 
 
@@ -142,40 +143,42 @@ const countRoomParticipants = asyncHandler(async (req, res) => {
 
     const roomParticipants = await RoomParticipant.aggregate([
         {
-            $match: { roomID: roomId }
-        },
-        {
-            $group: {
-                _id: "$roomID",
-                count: { $sum: 1 },
-                participants: { $push: "$participantID" }
-            }
-        },
+            $match: { roomID: new mongoose.Types.ObjectId(roomId) }
+        },        
         {
             $lookup: {
                 from: "users",
-                localField: "participants",
+                localField: "participantID",
                 foreignField: "_id",
-                as: "participantsDetails",
+                as: "participants",
                 pipeline: [
                     {
                         $project: {
                             _id: 0,                            
-                            fullname: 1    
+                            username: 1    
                         }
                     }
                 ]
             }
         },
         {
+            $replaceRoot: {
+                newRoot: {
+                    count: { $size: "$participants" },
+                    participants: "$participants"
+                }
+            }
+        },
+        {
             $project: {
                 _id: 0,
-                count: 1,
-                participants: "$participantsDetails"
+                participants: 1,
+                count: 1           
+                
             }
         }
     ]);
-
+    console.log(roomParticipants);
     if (roomParticipants.length === 0) {
         return res.status(200).json(
             new ApiResponse(200, { count: 0, participants: [] }, "No participants in the room")
@@ -183,7 +186,7 @@ const countRoomParticipants = asyncHandler(async (req, res) => {
     }
 
     return res.status(200).json(
-        new ApiResponse(200, roomParticipants[0], "Room participants fetched successfully")
+        new ApiResponse(200, roomParticipants, "Room participants fetched successfully")
     );
 });
 

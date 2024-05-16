@@ -54,7 +54,7 @@ const isRoomActive = asyncHandler(async (req, res, next) => {
     try {
         const decodedToken = jwt.verify(roomToken, process.env.ROOM_TOKEN_SECRET);
 
-        const room = await Room.findById(decodedToken._id).select("-token"); 
+        const room = await Room.findById(decodedToken._id); 
         
         if(!room){
             throw new ApiError(400, "room not found") 
