@@ -241,8 +241,6 @@ const joinRoom = asyncHandler(async(req,res)=>{
     )
 });
 
-
-
 const pendingRoomRequests = asyncHandler(async(req,res)=>{
     const penndingRequests = await Request.find({
         receiverID: req.user?._id,
@@ -260,6 +258,24 @@ const pendingRoomRequests = asyncHandler(async(req,res)=>{
     )
 })      
 
+
+// both controllers
+
+const getCurrentRoom = asyncHandler(async (req, res) => {
+
+    const getCurrentRoom = req.room
+    if (!getCurrentRoom) {
+        throw new ApiError(400, "room not found");
+    }
+    
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, getCurrentRoom, "room found")
+    );
+})
+
+
 const furtherAction = asyncHandler(async (req,res)=>{
     return res.status(200).send("access to room")
 })
@@ -271,5 +287,6 @@ export {
     furtherAction,
     closeRoom,
     countRoomParticipants,
-    pendingRoomRequests
+    pendingRoomRequests,
+    getCurrentRoom
 }

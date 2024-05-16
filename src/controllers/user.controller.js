@@ -2,6 +2,8 @@ import {asyncHandler} from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js";
 import {ApiResponse} from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
+import jwt from "jsonwebtoken";
+
 
 const generateTokens = async (userId) => {
     const user = await User.findById(userId);
@@ -11,6 +13,12 @@ const generateTokens = async (userId) => {
     user.save({validateBeforeSave: false}); 
     return {accessToken,refreshToken}
 }
+
+const options = {
+    httpOnly: true,
+    secure: true
+}
+
 
 const registerUser = asyncHandler(async (req,res)=> {
     
@@ -89,20 +97,86 @@ const loginUser = asyncHandler(async (req,res)=>{
     const {accessToken,refreshToken} = await generateTokens(userFound._id);
 
     const loggedInUser = await User.findById(userFound._id).select("-password -refreshToken");
+         
+    return res
+    .status(200)
+    .cookie("AccessToken",accessToken,options)    
+    .cookie("RefreshToken",refreshToken,{...options,maxAge: 10 * 24 * 60 * 60 * 1000})
+    .json(
+        new ApiResponse(200,loggedInUser,"login Successfully")
+    )
+    
+})
 
-    const options = {
-        httpOnly: true,
-        secure: true
+const getCurrentUser = asyncHandler(async(req,res)=>{
+
+    const currentUser = req.user;
+    
+    if(!currentUser){
+        throw new ApiError(400,"user not found")
     }
 
     return res
     .status(200)
-    .cookie("AccessToken",accessToken,options)
-    .cookie("RefreshToken",refreshToken,options)
     .json(
-        new ApiResponse(200,loggedInUser,"login Successfully")
+        new ApiResponse(200,currentUser,"user fetch successfully")
     )
-     
+})
+
+const logoutUser = asyncHandler(async (req,res)=>{
+    await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                refreshToken: undefined
+            }
+        },
+        {new: true} 
+    )
+
+        
+    return res
+    .status(200)
+    .clearCookie("AccessToken", options)
+    .clearCookie("RefreshToken", options)
+    .json(
+        new ApiResponse(200,{},"user logged out successfully")
+    )
+})
+
+const refreshAccessToken = asyncHandler(async (req,res)=>{
+    const incomingRefreshToken = req.cookies.RefreshToken;
+
+    if(!incomingRefreshToken){
+        throw new ApiError(400,"refresh token not found")
+    }   
+
+    try {
+        const decodedRefreshToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        const user = await User.findById(decodedRefreshToken._id);
+
+        if(incomingRefreshToken !== user?.refreshToken){
+            throw new ApiError(401,"refreshtoken is expired or used");
+        }
+
+        const {accessToken,refreshToken} = await generateTokens(user._id);
+        
+        return res
+        .status(200)
+        .cookie("AccessToken",accessToken,options)
+        .cookie("RefreshToken",refreshToken,{...options,maxAge: 10 * 24 * 60 * 60 * 1000})
+        .json(
+            new ApiResponse(200,{accessToken,refreshToken},"refresh token refreshed successfully")
+        )
+
+    } catch (error) {
+        if(error.name === "JsonWebTokenError"){
+            throw new ApiError(401,"refresh token has expired")
+        } else {
+            throw error
+        }        
+    }
 })
 
 const isAuthorized = asyncHandler(async (req,res) => {
@@ -112,5 +186,8 @@ const isAuthorized = asyncHandler(async (req,res) => {
 export {
     registerUser,
     loginUser,
-    isAuthorized
+    isAuthorized,
+    getCurrentUser,
+    logoutUser,
+    refreshAccessToken
 }

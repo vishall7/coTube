@@ -1,6 +1,6 @@
 import { Router } from "express"; 
 import { isAuthorizedForRoom, isRoomActive, isYoutuber, verifyJWT } from "../middlewares/auth.middleware.js";
-import { closeRoom, countRoomParticipants, createRoom, furtherAction, inviteToRoom, joinRoom, pendingRoomRequests } from "../controllers/room.controller.js";
+import { closeRoom, countRoomParticipants, createRoom, furtherAction, getCurrentRoom, inviteToRoom, joinRoom, pendingRoomRequests } from "../controllers/room.controller.js";
 
 const router = Router();
 
@@ -18,6 +18,8 @@ router.route("/joined").get(verifyJWT,isRoomActive,isAuthorizedForRoom,furtherAc
 router.route("/pending-requests").get(verifyJWT,pendingRoomRequests);
 
 // both routes
+
+router.route("/current-room").get(verifyJWT,isRoomActive,getCurrentRoom);
 
 router.route("/participant-count").get(verifyJWT,isRoomActive,countRoomParticipants)
 
